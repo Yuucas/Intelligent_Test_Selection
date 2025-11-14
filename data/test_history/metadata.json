@@ -1,0 +1,21 @@
+{
+  "generation_date": "2025-11-14T15:53:27.148226",
+  "num_runs": 100,
+  "num_tests": 43,
+  "num_test_files": 4,
+  "num_source_files": 4,
+  "total_records": 4300,
+  "overall_pass_rate": 0.8611627906976744,
+  "test_files": [
+    "tests/sample_project/test_auth.py",
+    "tests/sample_project/test_database.py",
+    "tests/sample_project/test_api.py",
+    "tests/sample_project/test_utils.py"
+  ],
+  "source_files": [
+    "tests/sample_project/auth.py",
+    "tests/sample_project/database.py",
+    "tests/sample_project/api.py",
+    "tests/sample_project/utils.py"
+  ]
+}

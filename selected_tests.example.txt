@@ -1,0 +1,12 @@
+# Example: Intelligently Selected Tests
+# This file shows sample output from the test selection system
+# After running: python src/main.py --mode select --threshold 0.7
+#
+# Result: 5 tests selected out of 43 total tests (88.4% reduction)
+# Time savings: 10.42s (87.2% faster)
+
+tests/sample_project/test_utils.py::test_valid_email
+tests/sample_project/test_utils.py::test_flatten_nested_dict
+tests/sample_project/test_auth.py::test_validate_session_valid
+tests/sample_project/test_database.py::test_import_from_json
+tests/sample_project/test_api.py::test_can_make_request_under_limit

@@ -1,0 +1,130 @@
+name: Intelligent Test Selection CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  intelligent-test-selection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git diff
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for trained model
+        id: check_model
+        run: |
+          if [ -f "data/models/test_selector_model.pkl" ]; then
+            echo "model_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "model_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate test history (if model doesn't exist)
+        if: steps.check_model.outputs.model_exists == 'false'
+        run: |
+          python src/main.py --mode generate-history --num-runs 100
+
+      - name: Train model (if model doesn't exist)
+        if: steps.check_model.outputs.model_exists == 'false'
+        run: |
+          python src/main.py --mode train
+
+      - name: Detect changed files
+        id: changed_files
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, compare with base branch
+            git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep '\.py$' > changed_files.txt || echo "No Python files changed"
+          else
+            # For pushes, compare with previous commit
+            git diff --name-only HEAD~1 HEAD | grep '\.py$' > changed_files.txt || echo "No Python files changed"
+          fi
+
+          if [ -s changed_files.txt ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changed Python files:"
+            cat changed_files.txt
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No Python files changed"
+          fi
+
+      - name: Run all tests (no changes detected)
+        if: steps.changed_files.outputs.has_changes == 'false'
+        run: |
+          echo "No code changes detected - running full test suite for verification"
+          pytest tests/sample_project -v --maxfail=5
+
+      - name: Select and run tests (changes detected)
+        if: steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          echo "Code changes detected - using intelligent test selection"
+          python src/main.py --mode select --threshold 0.7 --changed-files $(cat changed_files.txt | tr '\n' ' ')
+
+          # Run selected tests
+          if [ -f "selected_tests.txt" ] && [ -s "selected_tests.txt" ]; then
+            echo "Running selected tests:"
+            cat selected_tests.txt
+            pytest -v $(cat selected_tests.txt | tr '\n' ' ')
+          else
+            echo "No tests selected by ITS - running all tests as fallback"
+            pytest tests/sample_project -v --maxfail=5
+          fi
+
+      - name: Generate test report
+        if: always() && steps.changed_files.outputs.has_changes == 'true'
+        run: |
+          python src/main.py --mode report --output test_selection_report.md
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-selection-report
+          path: test_selection_report.md
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('test_selection_report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🤖 Intelligent Test Selection Report\n\n${report}`
+            });

@@ -1,0 +1,79 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.json
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+
+# Data files (keep directory structure, exclude large files)
+data/test_history/*.csv
+data/models/*.pkl
+data/models/*.joblib
+data/code_snapshots/
+
+# Keep metadata files
+!data/test_history/metadata.json
+!data/test_history/.gitkeep
+!data/models/.gitkeep
+
+# Logs
+logs/*.log
+*.log
+
+# Reports
+test_selection_report.md
+demo_test_selection_report.md
+selected_tests.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak

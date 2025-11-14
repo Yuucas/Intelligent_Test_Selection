@@ -1,0 +1,65 @@
+# GitLab CI/CD Pipeline with Intelligent Test Selection
+
+stages:
+  - setup
+  - test
+  - report
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+    - data/models/
+
+before_script:
+  - python -m pip install --upgrade pip
+  - pip install -r requirements.txt
+
+# Setup stage - generate data and train model if needed
+setup:
+  stage: setup
+  script:
+    - |
+      if [ ! -f "data/models/test_selector_model.pkl" ]; then
+        echo "Model not found, generating test history and training..."
+        python src/main.py --mode generate-history --num-runs 100
+        python src/main.py --mode train
+      else
+        echo "Model already exists, skipping training"
+      fi
+  artifacts:
+    paths:
+      - data/
+    expire_in: 1 week
+
+# Test stage - intelligent test selection
+intelligent_test_selection:
+  stage: test
+  script:
+    - echo "Running Intelligent Test Selection..."
+    - python src/main.py --mode select --threshold 0.7
+    - pytest --its-enabled --its-threshold 0.7 -v --cov --cov-report=html --cov-report=term
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    paths:
+      - htmlcov/
+      - selected_tests.txt
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 1 week
+
+# Report stage - generate selection report
+generate_report:
+  stage: report
+  script:
+    - python src/main.py --mode report --output test_selection_report.md
+    - cat test_selection_report.md
+  artifacts:
+    paths:
+      - test_selection_report.md
+    expire_in: 1 month
+  when: always

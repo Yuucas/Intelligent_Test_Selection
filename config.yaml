@@ -1,0 +1,38 @@
+test_selection:
+  threshold: 0.7              # Confidence threshold for test selection
+  min_tests: 5                # Minimum tests to run
+  max_tests: 100              # Maximum tests to run
+  coverage_target: 0.85       # Target coverage percentage
+  prioritize_failed: true     # Prioritize recently failed tests
+
+ml_model:
+  algorithm: random_forest    # Options: random_forest, gradient_boosting, logistic_regression
+  test_size: 0.2             # Train/test split ratio
+  n_estimators: 100          # Number of trees (for ensemble methods)
+  max_depth: 10              # Maximum tree depth
+  random_state: 42           # Random seed for reproducibility
+
+feature_extraction:
+  use_code_complexity: true
+  use_test_history: true
+  use_code_coverage: true
+  use_execution_time: true
+  lookback_window: 50        # Number of historical runs to consider
+
+logging:
+  level: INFO                # DEBUG, INFO, WARNING, ERROR
+  format: detailed           # simple, detailed
+  log_file: logs/its.log
+  max_file_size: 10485760   # 10MB
+  backup_count: 5
+
+data:
+  history_file: data/test_history/test_results.csv
+  model_file: data/models/test_selector_model.pkl
+  features_file: data/models/feature_scaler.pkl
+
+ci_cd:
+  enabled: true
+  fail_on_error: false
+  save_reports: true
+  report_format: json        # json, html, markdown
